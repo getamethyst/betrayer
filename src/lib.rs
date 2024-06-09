@@ -140,7 +140,6 @@ pub enum MenuItem<T> {
         checked: Option<bool>,
         grayed: bool,
         icon: Option<Icon>,
-        #[cfg(target_os = "windows")]
         checked_icon: Option<Icon>
     },
     Menu { name: String, children: Vec<MenuItem<T>> }
@@ -163,13 +162,12 @@ impl<T> MenuItem<T> {
             checked: None,
             grayed,
             icon,
-            #[cfg(target_os = "windows")]
             checked_icon: None
         }
     }
 
     /// A new clickable entry with label and checkmark that emits a [TrayEvent::Menu] when clicked
-    pub fn check_button<S>(name: S, signal: T, checked: bool, grayed: bool, #[cfg(target_os = "windows")] icons: (Option<Icon>, Option<Icon>), #[cfg(not(target_os = "windows"))] icon: Option<Icon>) -> Self
+    pub fn check_button<S>(name: S, signal: T, checked: bool, grayed: bool, icons: (Option<Icon>, Option<Icon>)) -> Self
     where
         S: ToString
     {
@@ -178,11 +176,7 @@ impl<T> MenuItem<T> {
             signal,
             checked: Some(checked),
             grayed,
-            #[cfg(target_os = "windows")]
             icon: icons.0,
-            #[cfg(not(target_os = "windows"))]
-            icon,
-            #[cfg(target_os = "windows")]
             checked_icon: icons.1
         }
     }

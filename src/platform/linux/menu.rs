@@ -83,7 +83,7 @@ fn build_menu<T>(menu: Menu<T>) -> Vec<MenuEntry<T>> {
                 children: vec![],
                 signal: None
             },
-            MenuItem::Button { name, signal, checked, grayed, icon } => {
+            MenuItem::Button { name, signal, checked, grayed, icon, checked_icon } => {
                 let mut props = HashMap::from([
                     (String::from("label"), OwnedValue::from(Str::from(name))),
                     (String::from("enabled"), OwnedValue::from(!grayed))
@@ -92,7 +92,7 @@ fn build_menu<T>(menu: Menu<T>) -> Vec<MenuEntry<T>> {
                     props.insert(String::from("toggle-type"), OwnedValue::from(Str::from_static("checkmark")));
                     props.insert(String::from("toggle-state"), OwnedValue::from(if checked { 1i32 } else { 0i32 }));
                 }
-                if let Some(NativeIcon::Pixels(pixels)) = icon.map(|x| x.0) {
+                if let Some(NativeIcon::Pixels(pixels)) = checked.map(|checked| if checked { checked_icon } else { icon }).flatten().map(|icon| icon.0) {
                     props.insert(String::from("icon-data"), OwnedValue::try_from(Value::from(pixels)).unwrap());
                 }
                 MenuEntry {
