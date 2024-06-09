@@ -1,6 +1,7 @@
 use std::cell::Cell;
 
 pub trait OptionCellExt<T> {
+    #[allow(dead_code)]
     fn with<R, F: FnOnce(&mut T) -> R>(&self, func: F) -> Option<R>;
 }
 

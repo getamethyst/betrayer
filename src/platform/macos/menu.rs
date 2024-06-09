@@ -11,7 +11,7 @@ pub unsafe fn build_menu_item<T>(
 ) -> Id<NSMenuItem> {
     match item {
         MenuItem::Separator => NSMenuItem::separatorItem(marker),
-        MenuItem::Button { name, checked, signal } => {
+        MenuItem::Button { name, checked, signal, grayed } => {
             let button = NSMenuItem::new(marker);
             button.setTitle(&NSString::from_str(&name));
             //let button = NSMenuItem::initWithTitle_action_keyEquivalent(
@@ -27,6 +27,7 @@ pub unsafe fn build_menu_item<T>(
             button.setTarget(Some(callback));
             button.setAction(Some(SystemTrayCallback::selector()));
             button.setTag(signal_map.len() as NSInteger);
+            button.setEnabled(!grayed);
             signal_map.push(signal);
             button
         }

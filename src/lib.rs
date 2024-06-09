@@ -134,7 +134,7 @@ impl<T> Menu<T> {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum MenuItem<T> {
     Separator,
-    Button { name: String, signal: T, checked: Option<bool> },
+    Button { name: String, signal: T, checked: Option<bool>, grayed: bool },
     Menu { name: String, children: Vec<MenuItem<T>> }
 }
 
@@ -145,26 +145,28 @@ impl<T> MenuItem<T> {
     }
 
     /// A new clickable entry with label that emits a [TrayEvent::Menu] when clicked
-    pub fn button<S>(name: S, signal: T) -> Self
+    pub fn button<S>(name: S, signal: T, grayed: bool) -> Self
     where
         S: ToString
     {
         Self::Button {
             name: name.to_string(),
             signal,
-            checked: None
+            checked: None,
+            grayed
         }
     }
 
     /// A new clickable entry with label and checkmark that emits a [TrayEvent::Menu] when clicked
-    pub fn check_button<S>(name: S, signal: T, checked: bool) -> Self
+    pub fn check_button<S>(name: S, signal: T, checked: bool, grayed: bool) -> Self
     where
         S: ToString
     {
         Self::Button {
             name: name.to_string(),
             signal,
-            checked: Some(checked)
+            checked: Some(checked),
+            grayed
         }
     }
 

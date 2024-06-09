@@ -9,7 +9,7 @@ use winit::event_loop::{ControlFlow, EventLoopBuilder};
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Signal {
     Profile(u32),
-    Open,
+    Null,
     Quit
 }
 
@@ -29,11 +29,11 @@ fn main() -> Result<()> {
         .with_menu(build_menu(selected))
         // with `winit` feature:
         .build_event_loop(&event_loop, |e| Some(e))?;
-    // without:
-    //.build({
-    //    let proxy = event_loop.create_proxy();
-    //    move |s| {let _ = proxy.send_event(s); }
-    //})?;
+        // without:
+        //.build({
+        //    let proxy = event_loop.create_proxy();
+        //    move |s| {let _ = proxy.send_event(s); }
+        //})?;
 
     event_loop.set_control_flow(ControlFlow::Wait);
     event_loop.run(|event, evtl| match event {
@@ -48,8 +48,8 @@ fn main() -> Result<()> {
                             tray.set_menu(build_menu(selected));
                         }
                     }
-                    Signal::Open => {}
-                    Signal::Quit => evtl.exit()
+                    Signal::Null => {}
+                    Signal::Quit => evtl.exit(),
                 }
             }
         }
@@ -62,10 +62,10 @@ fn build_menu(selected: u32) -> Menu<Signal> {
     Menu::new([
         MenuItem::menu(
             "Profiles",
-            (0..5).map(|i| MenuItem::check_button(format!("Profile {}", i + 1), Signal::Profile(i), selected == i))
+            (0..5).map(|i| MenuItem::check_button(format!("Profile {}", i + 1), Signal::Profile(i), selected == i, false))
         ),
         MenuItem::separator(),
-        MenuItem::button("Open", Signal::Open),
-        MenuItem::button("Quit", Signal::Quit)
+        MenuItem::button("Disabled", Signal::Null, true),
+        MenuItem::button("Quit", Signal::Quit, false)
     ])
 }
