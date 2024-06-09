@@ -6,7 +6,7 @@ use parking_lot::Mutex;
 use zbus::zvariant::{OwnedValue, Str, Value};
 use zbus::{interface, SignalContext};
 
-use crate::platform::linux::TrayCallback;
+use crate::platform::linux::{TrayCallback, NativeIcon};
 use crate::{ClickType, Menu, MenuItem, TrayEvent};
 
 //#[derive(Clone)]
@@ -83,17 +83,18 @@ fn build_menu<T>(menu: Menu<T>) -> Vec<MenuEntry<T>> {
                 children: vec![],
                 signal: None
             },
-            MenuItem::Button { name, signal, checked, grayed } => {
+            MenuItem::Button { name, signal, checked, grayed, icon } => {
                 let mut props = HashMap::from([
                     (String::from("label"), OwnedValue::from(Str::from(name))),
                     (String::from("enabled"), OwnedValue::from(!grayed))
                 ]);
-
                 if let Some(checked) = checked {
                     props.insert(String::from("toggle-type"), OwnedValue::from(Str::from_static("checkmark")));
                     props.insert(String::from("toggle-state"), OwnedValue::from(if checked { 1i32 } else { 0i32 }));
                 }
-
+                if let Some(NativeIcon::Pixels(pixels)) = icon.map(|x| x.0) {
+                    props.insert(String::from("icon-data"), OwnedValue::try_from(Value::from(pixels)).unwrap());
+                }
                 MenuEntry {
                     properties: props,
                     children: vec![],

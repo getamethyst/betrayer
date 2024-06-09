@@ -3,7 +3,7 @@ use std::any::Any;
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::{HWND, POINT};
 use windows::Win32::UI::WindowsAndMessaging::{
-    AppendMenuW, CreatePopupMenu, DestroyMenu, GetCursorPos, SetForegroundWindow, TrackPopupMenu, HMENU, MF_CHECKED, MF_GRAYED, MF_POPUP, MF_SEPARATOR, MF_STRING, TPM_BOTTOMALIGN, TPM_LEFTALIGN
+    AppendMenuW, CreatePopupMenu, DestroyMenu, GetCursorPos, GetIconInfo, SetForegroundWindow, SetMenuItemBitmaps, TrackPopupMenu, HMENU, ICONINFO, MF_BYPOSITION, MF_CHECKED, MF_GRAYED, MF_POPUP, MF_SEPARATOR, MF_STRING, TPM_BOTTOMALIGN, TPM_LEFTALIGN
 };
 
 use crate::error::{TrayError, TrayResult};
@@ -41,12 +41,14 @@ impl Drop for NativeMenu {
 }
 
 fn add_all<T>(hmenu: HMENU, signals: &mut Vec<T>, items: Vec<MenuItem<T>>) -> TrayResult<()> {
+    let mut uposition = 0;
     for item in items {
         match item {
             MenuItem::Separator => {
                 unsafe { AppendMenuW(hmenu, MF_SEPARATOR, 0, None)? };
             }
-            MenuItem::Button { name, signal, checked, grayed } => {
+            MenuItem::Button { name, signal, checked, grayed, icon, checked_icon } => {
+                let is_checked_button = checked.is_some();
                 let checked = checked
                     .map(|v| v.then_some(MF_CHECKED).unwrap_or_default())
                     .unwrap_or_default();
@@ -54,7 +56,24 @@ fn add_all<T>(hmenu: HMENU, signals: &mut Vec<T>, items: Vec<MenuItem<T>>) -> Tr
                     .then_some(MF_GRAYED)
                     .unwrap_or_default();
                 let wide = encode_wide(&name);
-                unsafe { AppendMenuW(hmenu, MF_STRING | checked | grayed, signals.len(), PCWSTR(wide.as_ptr()))? };
+                unsafe {
+                    AppendMenuW(hmenu, MF_STRING | checked | grayed, signals.len(), PCWSTR(wide.as_ptr()))?;
+                    if let Some(icon) = icon {
+                        let hbitmapunchecked = {
+                            let mut info = ICONINFO::default();
+                            GetIconInfo(icon.0.handle(), &mut info)?;
+                            info.hbmColor
+                        };
+                        let hbmitmapchecked = if is_checked_button {
+                            let mut info = ICONINFO::default();
+                            GetIconInfo(checked_icon.unwrap().0.handle(), &mut info)?;
+                            info.hbmColor
+                        } else {
+                            hbitmapunchecked
+                        };
+                        SetMenuItemBitmaps(hmenu, uposition, MF_BYPOSITION, hbitmapunchecked, hbmitmapchecked)?;
+                    }
+                }
                 signals.push(signal);
             }
             MenuItem::Menu { name, children } => {
@@ -64,6 +83,7 @@ fn add_all<T>(hmenu: HMENU, signals: &mut Vec<T>, items: Vec<MenuItem<T>>) -> Tr
                 unsafe { AppendMenuW(hmenu, MF_POPUP, submenu.0 as _, PCWSTR(wide.as_ptr()))? };
             }
         }
+        uposition += 1;
     }
     Ok(())
 }

@@ -134,7 +134,15 @@ impl<T> Menu<T> {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum MenuItem<T> {
     Separator,
-    Button { name: String, signal: T, checked: Option<bool>, grayed: bool },
+    Button {
+        name: String,
+        signal: T,
+        checked: Option<bool>,
+        grayed: bool,
+        icon: Option<Icon>,
+        #[cfg(target_os = "windows")]
+        checked_icon: Option<Icon>
+    },
     Menu { name: String, children: Vec<MenuItem<T>> }
 }
 
@@ -145,7 +153,7 @@ impl<T> MenuItem<T> {
     }
 
     /// A new clickable entry with label that emits a [TrayEvent::Menu] when clicked
-    pub fn button<S>(name: S, signal: T, grayed: bool) -> Self
+    pub fn button<S>(name: S, signal: T, grayed: bool, icon: Option<Icon>) -> Self
     where
         S: ToString
     {
@@ -153,12 +161,15 @@ impl<T> MenuItem<T> {
             name: name.to_string(),
             signal,
             checked: None,
-            grayed
+            grayed,
+            icon,
+            #[cfg(target_os = "windows")]
+            checked_icon: None
         }
     }
 
     /// A new clickable entry with label and checkmark that emits a [TrayEvent::Menu] when clicked
-    pub fn check_button<S>(name: S, signal: T, checked: bool, grayed: bool) -> Self
+    pub fn check_button<S>(name: S, signal: T, checked: bool, grayed: bool, #[cfg(target_os = "windows")] icons: (Option<Icon>, Option<Icon>), #[cfg(not(target_os = "windows"))] icon: Option<Icon>) -> Self
     where
         S: ToString
     {
@@ -166,7 +177,13 @@ impl<T> MenuItem<T> {
             name: name.to_string(),
             signal,
             checked: Some(checked),
-            grayed
+            grayed,
+            #[cfg(target_os = "windows")]
+            icon: icons.0,
+            #[cfg(not(target_os = "windows"))]
+            icon,
+            #[cfg(target_os = "windows")]
+            checked_icon: icons.1
         }
     }
 

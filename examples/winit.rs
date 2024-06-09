@@ -24,7 +24,7 @@ fn main() -> Result<()> {
     let mut selected = 0;
 
     let tray = TrayIconBuilder::new()
-        .with_icon(Icon::from_rgba(vec![255u8; 32 * 32 * 4], 32, 32)?)
+        .with_icon(Icon::from_rgba(vec![255; 32 * 32 * 4], 32, 32)?)
         .with_tooltip("Demo System Tray")
         .with_menu(build_menu(selected))
         // with `winit` feature:
@@ -62,10 +62,23 @@ fn build_menu(selected: u32) -> Menu<Signal> {
     Menu::new([
         MenuItem::menu(
             "Profiles",
-            (0..5).map(|i| MenuItem::check_button(format!("Profile {}", i + 1), Signal::Profile(i), selected == i, false))
+            (0..5).map(|i| {
+                let name = format!("Profile {}", i + 1);
+                let signal = Signal::Profile(i);
+                let checked = selected == i;
+
+                #[cfg(target_os = "windows")]
+                return MenuItem::check_button(name, signal, checked, false, (None, None));
+                #[cfg(not(target_os = "windows"))]
+                return MenuItem::button(name, signal, checked, None);
+            })
         ),
         MenuItem::separator(),
-        MenuItem::button("Disabled", Signal::Null, true),
-        MenuItem::button("Quit", Signal::Quit, false)
+        #[cfg(target_os = "windows")]
+        MenuItem::check_button("Icon", Signal::Null, false, false, (Some(Icon::from_rgba(vec![0; 16 * 16 * 4], 16, 16).unwrap()), Some(Icon::from_rgba(vec![255; 16 * 16 * 4], 16, 16).unwrap()))),
+        #[cfg(not(target_os = "windows"))]
+        MenuItem::button("Icon", Signal::Null, false, Some(Icon::from_rgba(vec![255; 16 * 16 * 4], 16, 16).unwrap())),
+        MenuItem::button("Disabled", Signal::Null, true, None),
+        MenuItem::button("Quit", Signal::Quit, false, None)
     ])
 }
