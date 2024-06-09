@@ -142,7 +142,12 @@ pub enum MenuItem<T> {
         icon: Option<Icon>,
         checked_icon: Option<Icon>
     },
-    Menu { name: String, children: Vec<MenuItem<T>> }
+    Menu {
+        name: String,
+        children: Vec<MenuItem<T>>,
+        #[cfg(target_os = "windows")]
+        icon: Option<Icon>
+    }
 }
 
 impl<T> MenuItem<T> {
@@ -182,14 +187,16 @@ impl<T> MenuItem<T> {
     }
 
     /// A new submenu
-    pub fn menu<S, I>(name: S, children: I) -> Self
+    pub fn menu<S, I>(name: S, children: I, #[cfg(target_os = "windows")] icon: Option<Icon>) -> Self
     where
         S: ToString,
         I: IntoIterator<Item = MenuItem<T>>
     {
         Self::Menu {
             name: name.to_string(),
-            children: children.into_iter().collect()
+            children: children.into_iter().collect(),
+            #[cfg(target_os = "windows")]
+            icon
         }
     }
 }

@@ -48,7 +48,7 @@ fn add_all<T>(hmenu: HMENU, signals: &mut Vec<T>, items: Vec<MenuItem<T>>) -> Tr
                 unsafe { AppendMenuW(hmenu, MF_SEPARATOR, 0, None)? };
             }
             MenuItem::Button { name, signal, checked, grayed, icon, checked_icon } => {
-                let is_checked_button = checked.is_some();
+                let is_checked_button = checked_icon.is_some();
                 let checked = checked
                     .map(|v| v.then_some(MF_CHECKED).unwrap_or_default())
                     .unwrap_or_default();
@@ -76,11 +76,18 @@ fn add_all<T>(hmenu: HMENU, signals: &mut Vec<T>, items: Vec<MenuItem<T>>) -> Tr
                 }
                 signals.push(signal);
             }
-            MenuItem::Menu { name, children } => {
+            MenuItem::Menu { name, children, icon } => {
                 let submenu = unsafe { CreatePopupMenu()? };
                 add_all(submenu, signals, children)?;
                 let wide = encode_wide(&name);
-                unsafe { AppendMenuW(hmenu, MF_POPUP, submenu.0 as _, PCWSTR(wide.as_ptr()))? };
+                unsafe {
+                    AppendMenuW(hmenu, MF_POPUP, submenu.0 as _, PCWSTR(wide.as_ptr()))?;
+                    if let Some(icon) = icon {
+                        let mut info = ICONINFO::default();
+                        GetIconInfo(icon.0.handle(), &mut info)?;
+                        SetMenuItemBitmaps(hmenu, uposition, MF_BYPOSITION, info.hbmColor, info.hbmColor)?;
+                    }
+                }
             }
         }
         uposition += 1;

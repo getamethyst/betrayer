@@ -10,8 +10,7 @@ use winit::event_loop::{ControlFlow, EventLoopBuilder};
 enum Signal {
     Profile(u32),
     Null,
-    Quit,
-    CheckIcon
+    Quit
 }
 
 fn main() -> Result<()> {
@@ -23,12 +22,11 @@ fn main() -> Result<()> {
     let event_loop = EventLoopBuilder::with_user_event().build()?;
 
     let mut selected = 0;
-    let mut icon_checked = false;
 
     let tray = TrayIconBuilder::new()
         .with_icon(Icon::from_rgba(vec![255; 32 * 32 * 4], 32, 32)?)
         .with_tooltip("Demo System Tray")
-        .with_menu(build_menu(selected, icon_checked))
+        .with_menu(build_menu(selected))
         // with `winit` feature:
         .build_event_loop(&event_loop, |e| Some(e))?;
         // without:
@@ -47,15 +45,11 @@ fn main() -> Result<()> {
                         if selected != i {
                             selected = i;
                             tray.set_tooltip(format!("Active Profile: {selected}"));
-                            tray.set_menu(build_menu(selected, icon_checked));
+                            tray.set_menu(build_menu(selected));
                         }
                     }
                     Signal::Null => {}
                     Signal::Quit => evtl.exit(),
-                    Signal::CheckIcon => {
-                        icon_checked = !icon_checked;
-                        tray.set_menu(build_menu(selected, icon_checked));
-                    }
                 }
             }
         }
@@ -64,20 +58,24 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn build_menu(selected: u32, icon_checked: bool) -> Menu<Signal> {
-    Menu::new([
-        MenuItem::menu(
-            "Profiles",
-            (0..5).map(|i| {
-                let name = format!("Profile {}", i + 1);
-                let signal = Signal::Profile(i);
-                let checked = selected == i;
+fn build_menu(selected: u32) -> Menu<Signal> {
+    let black_icon = Some(Icon::from_rgba(vec![0, 0, 0, 255].repeat(16 * 16), 16, 16).unwrap());
+    let white_icon = Some(Icon::from_rgba(vec![255; 16 * 16 * 4], 16, 16).unwrap());
+    let red_icon = Some(Icon::from_rgba(vec![255, 0, 0, 255].repeat(16 * 16), 16, 16).unwrap());
+    let menu_children = (0..5).map(|i| {
+        let name = format!("Profile {}", i + 1);
+        let signal = Signal::Profile(i);
+        let checked = selected == i;
 
-                return MenuItem::check_button(name, signal, checked, false, (None, None));
-            })
-        ),
+        return MenuItem::check_button(name, signal, checked, false, (white_icon.clone(), black_icon.clone()));
+    });
+    Menu::new([
+        #[cfg(target_os = "windows")]
+        MenuItem::menu("Profiles", menu_children, white_icon.clone()),
+        #[cfg(not(target_os = "windows"))]
+        MenuItem::menu("Profiles", menu_children),
         MenuItem::separator(),
-        MenuItem::check_button("Icon", Signal::CheckIcon, icon_checked, false, (Some(Icon::from_rgba(vec![0; 16 * 16 * 4], 16, 16).unwrap()), Some(Icon::from_rgba(vec![255; 16 * 16 * 4], 16, 16).unwrap()))),
+        MenuItem::button("Icon", Signal::Null, false, red_icon),
         MenuItem::button("Disabled", Signal::Null, true, None),
         MenuItem::button("Quit", Signal::Quit, false, None)
     ])
